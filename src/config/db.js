@@ -3,10 +3,11 @@ import config from "./config.js";
 
 const connectDB = async () => {
   try {
-    await mongoose.connect(config.MONGO_URI);
-    console.log("MongoDB connected successfully");
+    const conn = await mongoose.connect(config.MONGO_URI);
+    console.log(`MongoDB connected: ${conn.connection.host}`);
   } catch (error) {
     console.error("Error connecting to MongoDB:", error.message);
+    throw error;
   }
 };
 
