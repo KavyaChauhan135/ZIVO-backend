@@ -3,6 +3,7 @@ import helmet from "helmet";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import config from "../config/config.js";
+import passport from "../config/passport.js";
 import authRoutes from "../routes/auth.routes.js";
 import userRoutes from "../routes/user.routes.js";
 import { errorHandler, notFound } from "../middlewares/error.middleware.js";
@@ -13,6 +14,7 @@ app.use(helmet());
 app.use(cors({ origin: config.CLIENT_URL, credentials: true }));
 app.use(express.json({ limit: "10kb" }));
 app.use(cookieParser());
+app.use(passport.initialize());
 
 app.get("/api/health", (_req, res) => {
   res.json({ success: true, message: "OK", env: config.NODE_ENV });

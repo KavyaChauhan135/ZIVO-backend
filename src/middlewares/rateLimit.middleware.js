@@ -23,3 +23,13 @@ export const refreshLimiter = rateLimit({
   message: "Too many token refresh requests. Please try again later",
   handler,
 });
+
+// Google OAuth routes always respond with redirects, so count every request.
+export const oauthLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 30,
+  standardHeaders: "draft-8",
+  legacyHeaders: false,
+  message: "Too many sign-in attempts. Please try again later",
+  handler,
+});

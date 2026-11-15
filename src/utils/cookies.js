@@ -17,3 +17,23 @@ export const setRefreshCookie = (res, token, expiresAt) =>
 
 export const clearRefreshCookie = (res) =>
   res.clearCookie(REFRESH_COOKIE_NAME, baseOptions());
+
+// OAuth `state` (CSRF protection). Must be SameSite=Lax: the callback is a
+// cross-site redirect from Google, so a Strict cookie would not be sent.
+export const OAUTH_STATE_COOKIE_NAME = "oauthState";
+
+const oauthStateOptions = () => ({
+  httpOnly: true,
+  secure: config.isProduction,
+  sameSite: "lax",
+  path: "/api/auth/google",
+});
+
+export const setOAuthStateCookie = (res, state) =>
+  res.cookie(OAUTH_STATE_COOKIE_NAME, state, {
+    ...oauthStateOptions(),
+    maxAge: 10 * 60 * 1000,
+  });
+
+export const clearOAuthStateCookie = (res) =>
+  res.clearCookie(OAUTH_STATE_COOKIE_NAME, oauthStateOptions());

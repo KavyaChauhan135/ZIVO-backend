@@ -1,7 +1,9 @@
+import crypto from "node:crypto";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { matchedData } from "express-validator";
 import config from "../config/config.js";
+import passport from "../config/passport.js";
 import User from "../models/user.model.js";
 import ApiError from "../utils/ApiError.js";
 import {
@@ -11,8 +13,11 @@ import {
   verifyRefreshToken,
 } from "../utils/jwt.js";
 import {
+  OAUTH_STATE_COOKIE_NAME,
   REFRESH_COOKIE_NAME,
+  clearOAuthStateCookie,
   clearRefreshCookie,
+  setOAuthStateCookie,
   setRefreshCookie,
 } from "../utils/cookies.js";
 
@@ -100,6 +105,76 @@ export const login = async (req, res) => {
   const accessToken = await issueTokens(user, req, res);
 
   sendAuthResponse(res, 200, "Login successful", user, accessToken);
+};
+
+/**
+ * GET /api/auth/google
+ * Redirects to Google's consent screen. A random `state` is stored in a cookie
+ * and checked on the callback to block login-CSRF.
+ */
+export const googleAuth = (req, res, next) => {
+  const state = crypto.randomBytes(32).toString("hex");
+  setOAuthStateCookie(res, state);
+
+  passport.authenticate("google", {
+    session: false,
+    scope: ["profile", "email"],
+    state,
+    prompt: "select_account",
+  })(req, res, next);
+};
+
+const redirectToClient = (res, params) => {
+  const url = new URL(config.OAUTH_SUCCESS_REDIRECT);
+  for (const [key, value] of Object.entries(params)) {
+    url.searchParams.set(key, value);
+  }
+  res.redirect(url.toString());
+};
+
+const safeEqual = (a, b) =>
+  typeof a === "string" &&
+  typeof b === "string" &&
+  a.length === b.length &&
+  crypto.timingSafeEqual(Buffer.from(a), Buffer.from(b));
+
+/**
+ * GET /api/auth/google/callback
+ * On success, starts a session (refresh-token cookie) and redirects to the client,
+ * which then calls POST /api/auth/refresh to get an access token. Tokens are
+ * never put in the URL. On failure, redirects with `?error=<message>`.
+ */
+export const googleCallback = (req, res, next) => {
+  const expectedState = req.cookies?.[OAUTH_STATE_COOKIE_NAME];
+  clearOAuthStateCookie(res);
+
+  if (req.query.error) {
+    // e.g. the user clicked "Cancel" on Google's consent screen.
+    return redirectToClient(res, { error: "Google sign-in was cancelled" });
+  }
+  if (!safeEqual(req.query.state, expectedState)) {
+    return redirectToClient(res, {
+      error: "Sign-in session expired or is invalid. Please try again",
+    });
+  }
+
+  passport.authenticate("google", { session: false }, async (err, user, info) => {
+    try {
+      if (err) throw err;
+      if (!user) {
+        return redirectToClient(res, {
+          error: info?.message || "Google sign-in failed",
+        });
+      }
+
+      await pruneExpiredSessions(user._id);
+      await issueTokens(user, req, res);
+      redirectToClient(res, { status: "success" });
+    } catch (error) {
+      console.error("Google OAuth callback error:", error);
+      redirectToClient(res, { error: "Google sign-in failed. Please try again" });
+    }
+  })(req, res, next);
 };
 
 /**
@@ -204,6 +279,12 @@ export const changePassword = async (req, res) => {
   const { currentPassword, newPassword } = matchedData(req);
 
   const user = await User.findById(req.user._id).select("+password");
+  if (!user.password) {
+    throw new ApiError(
+      400,
+      "This account signs in with Google and has no password to change",
+    );
+  }
   if (!(await user.comparePassword(currentPassword))) {
     throw new ApiError(401, "Current password is incorrect");
   }

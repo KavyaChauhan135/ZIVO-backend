@@ -32,6 +32,21 @@ const config = Object.freeze({
 
   COOKIE_SAME_SITE: process.env.COOKIE_SAME_SITE || "strict",
   MAX_SESSIONS: Number(process.env.MAX_SESSIONS) || 5,
+
+  // Google OAuth is optional: the /api/auth/google routes return 503 unless all three are set.
+  GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID,
+  GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET,
+  GOOGLE_CALLBACK_URL:
+    process.env.GOOGLE_CALLBACK_URL ||
+    `http://localhost:${Number(process.env.PORT) || 3000}/api/auth/google/callback`,
+  // Frontend page the user is sent to after Google sign-in (success or failure).
+  OAUTH_SUCCESS_REDIRECT:
+    process.env.OAUTH_SUCCESS_REDIRECT ||
+    `${process.env.CLIENT_URL || "http://localhost:5173"}/oauth/callback`,
 });
+
+export const isGoogleOAuthEnabled = Boolean(
+  config.GOOGLE_CLIENT_ID && config.GOOGLE_CLIENT_SECRET,
+);
 
 export default config;

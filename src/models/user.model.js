@@ -33,12 +33,20 @@ const userSchema = new mongoose.Schema(
       trim: true,
       match: [/^\S+@\S+\.\S+$/, "Email is invalid"],
     },
+    // Optional for accounts created through Google sign-in.
     password: {
       type: String,
-      required: [true, "Password is required"],
+      required: [
+        function () {
+          return !this.googleId;
+        },
+        "Password is required",
+      ],
       minlength: [8, "Password must be at least 8 characters"],
       select: false,
     },
+    googleId: { type: String, unique: true, sparse: true, select: false },
+    avatar: String,
     role: {
       type: String,
       enum: Object.values(ROLES),
@@ -54,6 +62,7 @@ const userSchema = new mongoose.Schema(
     toJSON: {
       transform(_doc, ret) {
         delete ret.password;
+        delete ret.googleId;
         delete ret.refreshTokens;
         delete ret.__v;
         return ret;
@@ -71,7 +80,9 @@ userSchema.pre("save", async function () {
   if (!this.isNew) this.passwordChangedAt = new Date(Date.now() - 1000);
 });
 
-userSchema.methods.comparePassword = function (candidate) {
+userSchema.methods.comparePassword = async function (candidate) {
+  // Google-only accounts have no password, so password login always fails for them.
+  if (!this.password) return false;
   return bcrypt.compare(candidate, this.password);
 };
 
