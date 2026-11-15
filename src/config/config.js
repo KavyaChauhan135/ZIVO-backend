@@ -51,7 +51,14 @@ const config = Object.freeze({
   EMAIL_PASS: process.env.EMAIL_PASS,
   EMAIL_FROM:
     process.env.EMAIL_FROM ||
-    (process.env.EMAIL_USER ? `"E-Commerce Store" <${process.env.EMAIL_USER}>` : undefined),
+    (process.env.EMAIL_USER
+      ? `"${process.env.STORE_NAME || "E-Commerce Store"}" <${process.env.EMAIL_USER}>`
+      : undefined),
+
+  // Branding used in emails. STORE_LOGO_URL must be a public https PNG/JPG (most email
+  // apps block SVG); when unset, the store name is shown as a text logo instead.
+  STORE_NAME: process.env.STORE_NAME || "E-Commerce Store",
+  STORE_LOGO_URL: process.env.STORE_LOGO_URL,
 });
 
 export const isGoogleOAuthEnabled = Boolean(

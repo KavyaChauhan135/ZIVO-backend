@@ -1,5 +1,6 @@
 import nodemailer from "nodemailer";
 import config, { isEmailEnabled } from "../config/config.js";
+import { welcomeEmail } from "../templates/welcome.email.js";
 
 const transporter = isEmailEnabled
   ? nodemailer.createTransport({
@@ -22,12 +23,6 @@ export const verifyEmailTransport = async () => {
   }
 };
 
-const escapeHtml = (str) =>
-  String(str).replace(
-    /[&<>"']/g,
-    (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c],
-  );
-
 export const sendEmail = async ({ to, subject, text, html }) => {
   if (!transporter) return;
   return transporter.sendMail({ from: config.EMAIL_FROM, to, subject, text, html });
@@ -35,31 +30,12 @@ export const sendEmail = async ({ to, subject, text, html }) => {
 
 /** Sends the "welcome" email to a newly registered user. */
 export const sendWelcomeEmail = (user) => {
-  const name = escapeHtml(user.name);
-  const shopUrl = config.CLIENT_URL;
-
-  return sendEmail({
-    to: user.email,
-    subject: "Welcome to our store!",
-    text:
-      `Hi ${user.name},\n\n` +
-      `Thanks for registering! Your account (${user.email}) has been created successfully.\n\n` +
-      `Start shopping: ${shopUrl}\n\n` +
-      `If you did not create this account, please ignore this email.`,
-    html: `
-      <div style="font-family: Arial, sans-serif; max-width: 560px; margin: auto; color: #222;">
-        <h2>Welcome, ${name}!</h2>
-        <p>Thanks for registering. Your account <strong>${escapeHtml(user.email)}</strong> has been created successfully.</p>
-        <p>
-          <a href="${escapeHtml(shopUrl)}"
-             style="display:inline-block;padding:10px 20px;background:#2563eb;color:#fff;text-decoration:none;border-radius:6px;">
-            Start shopping
-          </a>
-        </p>
-        <p style="font-size: 12px; color: #777;">If you did not create this account, please ignore this email.</p>
-      </div>
-    `,
+  const { subject, text, html } = welcomeEmail(user, {
+    storeName: config.STORE_NAME,
+    logoUrl: config.STORE_LOGO_URL,
+    clientUrl: config.CLIENT_URL,
   });
+  return sendEmail({ to: user.email, subject, text, html });
 };
 
 /**
