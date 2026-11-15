@@ -6,6 +6,7 @@ import config from "../config/config.js";
 import passport from "../config/passport.js";
 import User from "../models/user.model.js";
 import ApiError from "../utils/ApiError.js";
+import { sendWelcomeEmailInBackground } from "../utils/email.js";
 import {
   hashToken,
   signAccessToken,
@@ -82,6 +83,7 @@ export const register = async (req, res) => {
   const user = await User.create({ name, email, password });
   const accessToken = await issueTokens(user, req, res);
 
+  sendWelcomeEmailInBackground(user);
   sendAuthResponse(res, 201, "Registration successful", user, accessToken);
 };
 

@@ -3,6 +3,7 @@ import { Strategy as GoogleStrategy } from "passport-google-oauth20";
 import config, { isGoogleOAuthEnabled } from "./config.js";
 import User from "../models/user.model.js";
 import ApiError from "../utils/ApiError.js";
+import { sendWelcomeEmailInBackground } from "../utils/email.js";
 
 /** Fits Google's display name into the model's 2-50 character name rule. */
 const normalizeName = (profile, email) => {
@@ -55,6 +56,7 @@ const verifyGoogleUser = async (_accessToken, _refreshToken, profile, done) => {
         googleId: profile.id,
         avatar,
       });
+      sendWelcomeEmailInBackground(user);
     }
 
     if (!user.isActive) {

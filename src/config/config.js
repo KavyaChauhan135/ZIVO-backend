@@ -43,10 +43,21 @@ const config = Object.freeze({
   OAUTH_SUCCESS_REDIRECT:
     process.env.OAUTH_SUCCESS_REDIRECT ||
     `${process.env.CLIENT_URL || "http://localhost:5173"}/oauth/callback`,
+
+  // Email (Nodemailer + Gmail SMTP) is optional: emails are skipped unless EMAIL_USER and EMAIL_PASS are set.
+  // EMAIL_PASS must be a Gmail *App Password* (Google Account -> Security -> 2-Step Verification -> App passwords),
+  // not your normal Gmail password.
+  EMAIL_USER: process.env.EMAIL_USER,
+  EMAIL_PASS: process.env.EMAIL_PASS,
+  EMAIL_FROM:
+    process.env.EMAIL_FROM ||
+    (process.env.EMAIL_USER ? `"E-Commerce Store" <${process.env.EMAIL_USER}>` : undefined),
 });
 
 export const isGoogleOAuthEnabled = Boolean(
   config.GOOGLE_CLIENT_ID && config.GOOGLE_CLIENT_SECRET,
 );
+
+export const isEmailEnabled = Boolean(config.EMAIL_USER && config.EMAIL_PASS);
 
 export default config;
