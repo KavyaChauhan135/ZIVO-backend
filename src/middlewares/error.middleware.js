@@ -1,5 +1,6 @@
 import config from "../config/config.js";
 import ApiError from "../utils/ApiError.js";
+import { MULTER_ERROR_MESSAGES } from "./upload.middleware.js";
 
 export const notFound = (req, _res, next) => {
   next(new ApiError(404, `Route not found: ${req.method} ${req.originalUrl}`));
@@ -25,6 +26,12 @@ export const errorHandler = (err, _req, res, _next) => {
   } else if (err.type === "entity.parse.failed") {
     statusCode = 400;
     message = "Malformed JSON in request body";
+  } else if (err.name === "MulterError") {
+    statusCode = err.code === "LIMIT_FILE_SIZE" ? 413 : 400;
+    message = MULTER_ERROR_MESSAGES[err.code] || err.message;
+  } else if (err.name === "VersionError") {
+    statusCode = 409;
+    message = "This record was changed by another request. Please reload and try again";
   }
 
   if (statusCode >= 500) {

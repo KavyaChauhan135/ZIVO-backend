@@ -59,6 +59,13 @@ const config = Object.freeze({
   // apps block SVG); when unset, the store name is shown as a text logo instead.
   STORE_NAME: process.env.STORE_NAME || "E-Commerce Store",
   STORE_LOGO_URL: process.env.STORE_LOGO_URL,
+
+  // ImageKit (product images) is optional: admin product write routes return 503 unless
+  // IMAGEKIT_PRIVATE_KEY is set. The private key must never be exposed to the client.
+  IMAGEKIT_PRIVATE_KEY: process.env.IMAGEKIT_PRIVATE_KEY,
+  // Root folder in your ImageKit media library; product images go to `<folder>/products`.
+  IMAGEKIT_FOLDER: process.env.IMAGEKIT_FOLDER || "/ecommerce",
+  MAX_UPLOAD_SIZE_MB: Number(process.env.MAX_UPLOAD_SIZE_MB) || 5,
 });
 
 export const isGoogleOAuthEnabled = Boolean(
@@ -66,5 +73,7 @@ export const isGoogleOAuthEnabled = Boolean(
 );
 
 export const isEmailEnabled = Boolean(config.EMAIL_USER && config.EMAIL_PASS);
+
+export const isImageKitEnabled = Boolean(config.IMAGEKIT_PRIVATE_KEY);
 
 export default config;

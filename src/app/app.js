@@ -6,6 +6,8 @@ import config from "../config/config.js";
 import passport from "../config/passport.js";
 import authRoutes from "../routes/auth.routes.js";
 import userRoutes from "../routes/user.routes.js";
+import productRoutes from "../routes/product.routes.js";
+import adminProductRoutes from "../routes/adminProduct.routes.js";
 import { errorHandler, notFound } from "../middlewares/error.middleware.js";
 
 const app = express();
@@ -22,6 +24,8 @@ app.get("/api/health", (_req, res) => {
 
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
+app.use("/api/products", productRoutes);
+app.use("/api/admin/products", adminProductRoutes);
 
 app.use(notFound);
 app.use(errorHandler);
